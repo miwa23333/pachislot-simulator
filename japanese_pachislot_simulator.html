@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>RETRO SLOT 777 - 日本經典拉霸機 (A-Type 模擬器)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+
+    body {
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #0b0f19;
+      color: #f3f4f6;
+    }
+
+    .font-digital {
+      font-family: 'Press Start 2P', monospace;
+    }
+
+    .font-tech {
+      font-family: 'Chakra Petch', sans-serif;
+    }
+
+    /* FEVER CHANCE 燈箱發光動畫 */
+    .fever-glow {
+      text-shadow: 0 0 10px #f43f5e, 0 0 20px #f43f5e, 0 0 35px #e11d48, 0 0 50px #be123c;
+      animation: pulse-fever 0.6s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulse-fever {
+      0% { opacity: 0.85; filter: drop-shadow(0 0 12px rgba(244, 63, 94, 0.8)); }
+      100% { opacity: 1; filter: drop-shadow(0 0 32px rgba(244, 63, 94, 1)); }
+    }
+
+    /* 物理按鈕觸感 */
+    .btn-push {
+      transition: all 0.05s ease;
+      box-shadow: 0 6px 0 rgba(0,0,0,0.6), inset 0 2px 2px rgba(255,255,255,0.4);
+    }
+    .btn-push:active:not(:disabled) {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 rgba(0,0,0,0.6), inset 0 1px 1px rgba(0,0,0,0.4);
+    }
+
+    /* 機台金屬質感 */
+    .cabinet-metal {
+      background: linear-gradient(145deg, #1f293d 0%, #111827 50%, #0d121d 100%);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 1px 2px rgba(255,255,255,0.1);
+    }
+
+    /* 中獎線閃爍 */
+    @keyframes line-flash {
+      0%, 100% { opacity: 1; filter: drop-shadow(0 0 8px #facc15); }
+      50% { opacity: 0.2; filter: drop-shadow(0 0 2px #facc15); }
+    }
+    .line-win-flash {
+      animation: line-flash 0.4s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between items-center p-2 sm:p-4 overflow-x-hidden">
+
+  <!-- 頂部功能導覽列 -->
+  <header class="w-full max-w-xl flex justify-between items-center bg-gray-900/90 border border-gray-800 rounded-xl px-3 py-2 mb-2 shadow-lg backdrop-blur flex-wrap gap-1.5 sm:gap-2">
+    <div class="flex items-center gap-2">
+      <span class="bg-rose-600 text-white font-black text-xs px-2 py-0.5 rounded shadow">SLOT 777</span>
+      <span class="text-xs text-gray-400 font-bold hidden sm:inline">A-Type 實體換金模擬</span>
+    </div>
+
+    <div class="flex items-center gap-1.5 flex-wrap text-xs">
+      <button id="soundToggleBtn" onclick="toggleSound()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 px-2 py-1 rounded flex items-center gap-1 transition">
+        <span>🔊 音效: <strong id="soundStatusText" class="text-emerald-400">ON</strong></span>
+      </button>
+
+      <button id="autoSimBtn" onclick="toggleAutoSim()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 px-2.5 py-1 rounded flex items-center gap-1 transition">
+        <span>AUTO: <strong id="autoSimStatusText" class="text-gray-400">OFF</strong></span>
+      </button>
+
+      <button onclick="toggleModal('dataModal')" class="bg-indigo-900/80 hover:bg-indigo-800 text-indigo-200 border border-indigo-700/50 px-2 py-1 rounded flex items-center gap-1 transition">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+        <span>數據帳單</span>
+      </button>
+
+      <button onclick="toggleModal('settingModal')" class="bg-amber-900/80 hover:bg-amber-800 text-amber-200 border border-amber-700/50 px-2 py-1 rounded flex items-center gap-1 transition">
+        <span id="currentSettingHeader">設定 1</span>
+      </button>
+
+      <button onclick="toggleModal('guideModal')" class="bg-rose-900/80 hover:bg-rose-800 text-rose-200 border border-rose-700/50 px-2 py-1 rounded flex items-center gap-1 transition">
+        <span>攻略</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 機台主體 (Cabinet) -->
+  <main class="w-full max-w-xl cabinet-metal border-2 border-gray-700 rounded-2xl p-3 sm:p-5 flex flex-col gap-3 shadow-2xl relative">
+    
+    <!-- 1. DATA COUNTER (面板) -->
+    <div class="bg-black/90 border-2 border-gray-800 rounded-xl p-2.5 flex justify-between items-center shadow-inner">
+      <div class="grid grid-cols-4 gap-2 text-center w-full">
+        <div class="bg-gray-900/80 p-1.5 rounded border border-gray-800">
+          <div class="text-[10px] text-gray-400 font-bold">總轉數 (G)</div>
+          <div id="statTotalGames" class="font-digital text-amber-400 text-sm sm:text-base">0</div>
+        </div>
+        <div class="bg-gray-900/80 p-1.5 rounded border border-gray-800">
+          <div class="text-[10px] text-gray-400 font-bold">當前轉數</div>
+          <div id="statCurrentGames" class="font-digital text-cyan-400 text-sm sm:text-base">0</div>
+        </div>
+        <div class="bg-gray-900/80 p-1.5 rounded border border-gray-800">
+          <div class="text-[10px] text-rose-400 font-bold">BIG BONUS</div>
+          <div id="statBB" class="font-digital text-rose-500 text-sm sm:text-base">0</div>
+        </div>
+        <div class="bg-gray-900/80 p-1.5 rounded border border-gray-800">
+          <div class="text-[10px] text-emerald-400 font-bold">REG BONUS</div>
+          <div id="statRB" class="font-digital text-emerald-400 text-sm sm:text-base">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 中間 FEVER! CHANCE 燈箱區域 -->
+    <div class="grid grid-cols-12 gap-2 items-center bg-gray-950/80 border border-gray-800 rounded-xl p-2 sm:p-3 relative">
+      <div class="col-span-4 text-[10px] sm:text-xs text-gray-400 space-y-0.5 leading-tight">
+        <div class="text-rose-400 font-bold">777 : BB (~300枚)</div>
+        <div class="text-emerald-400 font-bold">77BAR : RB (~100枚)</div>
+        <div>葡萄 : 8枚 | 鈴鐺 : 10枚</div>
+        <div>櫻桃 : 2枚 (角) / 4枚 (中)</div>
+        <div>REPLAY : 免費再刷</div>
+      </div>
+
+      <!-- FEVER! CHANCE 告知燈 -->
+      <div class="col-span-4 flex justify-center items-center">
+        <div id="feverLamp" class="w-24 sm:w-28 h-14 sm:h-16 bg-gray-900 border-2 border-gray-800 rounded-lg flex flex-col justify-center items-center cursor-pointer transition-all duration-300">
+          <span class="font-tech font-black text-xl sm:text-2xl text-gray-800 tracking-tighter transition-colors duration-200" id="feverText">FEVER!</span>
+          <span class="text-[8px] font-bold text-gray-800 tracking-widest mt-[-4px]" id="chanceText">CHANCE</span>
+        </div>
+      </div>
+
+      <div class="col-span-4 text-right flex flex-col justify-center">
+        <div class="text-[10px] text-gray-400">當前中獎線數</div>
+        <div id="activeLinesText" class="text-xs sm:text-sm font-bold text-amber-400">5 條線 (全線)</div>
+        <div class="text-[10px] text-gray-400 mt-1">獲得枚數 (PAYOUT)</div>
+        <div id="payoutDisplay" class="font-digital text-amber-400 text-base sm:text-lg">0</div>
+      </div>
+    </div>
+
+    <!-- 3. 滾輪主畫面 (REELS CANVAS) -->
+    <div class="relative bg-black rounded-xl border-4 border-gray-800 shadow-2xl p-1 overflow-hidden">
+      <canvas id="slotCanvas" class="w-full h-44 sm:h-52 rounded block cursor-pointer"></canvas>
+      <svg id="paylineOverlay" class="absolute inset-0 w-full h-full pointer-events-none z-20"></svg>
+    </div>
+
+    <!-- 4. 控制面板 -->
+    <div class="bg-gray-950/90 border border-gray-800 rounded-xl p-2.5 sm:p-4 flex flex-col gap-3">
+      <div class="grid grid-cols-12 gap-2 items-center bg-gray-900/90 border border-gray-800 rounded-lg p-2">
+        <div class="col-span-5 flex flex-col">
+          <span class="text-[10px] text-gray-400 font-bold">持有代幣 (CREDIT)</span>
+          <div class="flex items-baseline gap-1">
+            <span id="creditDisplay" class="font-digital text-emerald-400 text-base sm:text-lg">0</span>
+            <span class="text-[10px] text-emerald-600 font-bold">枚</span>
+          </div>
+        </div>
+
+        <div class="col-span-4 flex flex-col">
+          <span class="text-[10px] text-gray-400 font-bold">總投入金額 ($)</span>
+          <span id="cashSpentDisplay" class="font-digital text-rose-400 text-xs sm:text-sm">$0</span>
+        </div>
+
+        <div class="col-span-3 flex justify-end">
+          <button onclick="buyCoins()" class="btn-push bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs px-2.5 py-1.5 rounded-lg border border-emerald-400/50 shadow flex flex-col items-center leading-tight">
+            <span>💵 投入 $1,000</span>
+            <span class="text-[9px] text-emerald-200 font-normal">(換250枚)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- BET 模式選擇按鈕 -->
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btnBet1" onclick="selectBetMode(1)" class="btn-push py-2 rounded-lg font-bold text-xs border border-gray-700 bg-gray-800 text-gray-300 transition flex justify-center items-center gap-1">
+          <span>1 BET (單線)</span>
+        </button>
+        <button id="btnBet3" onclick="selectBetMode(3)" class="btn-push py-2 rounded-lg font-bold text-xs border border-amber-500 bg-amber-600 text-gray-950 transition flex justify-center items-center gap-1 shadow-lg">
+          <span>MAX BET (3枚/全線)</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-4 gap-2 items-center">
+        <div class="col-span-1 flex justify-center">
+          <button id="leverBtn" onclick="handleStartLever()" class="btn-push w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-b from-rose-500 to-rose-700 border-2 border-rose-300 shadow-lg flex flex-col justify-center items-center active:scale-95 transition">
+            <div class="w-2.5 h-2.5 bg-white/40 rounded-full mb-0.5"></div>
+            <span class="text-[9px] font-black text-white tracking-tighter leading-none">START</span>
+            <span class="text-[8px] font-bold text-rose-200 opacity-90">[Space]</span>
+          </button>
+        </div>
+
+        <div class="col-span-3 grid grid-cols-3 gap-2">
+          <button id="stop1" onclick="stopReel(0)" disabled class="btn-push h-11 sm:h-13 rounded-lg bg-gray-800 text-gray-300 font-black border border-gray-700 disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center justify-center">
+            <span class="text-sm sm:text-base leading-none">1</span>
+            <span class="text-[9px] text-amber-400 font-bold mt-0.5">[Z]</span>
+          </button>
+          <button id="stop2" onclick="stopReel(1)" disabled class="btn-push h-11 sm:h-13 rounded-lg bg-gray-800 text-gray-300 font-black border border-gray-700 disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center justify-center">
+            <span class="text-sm sm:text-base leading-none">2</span>
+            <span class="text-[9px] text-amber-400 font-bold mt-0.5">[X]</span>
+          </button>
+          <button id="stop3" onclick="stopReel(2)" disabled class="btn-push h-11 sm:h-13 rounded-lg bg-gray-800 text-gray-300 font-black border border-gray-700 disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center justify-center">
+            <span class="text-sm sm:text-base leading-none">3</span>
+            <span class="text-[9px] text-amber-400 font-bold mt-0.5">[C]</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="mt-2 text-[11px] text-gray-400 text-center font-bold">
+    ⌨️ 鍵盤快捷鍵：<span class="text-amber-400">[Space]</span> 扣幣並開始旋轉 ｜ <span class="text-amber-400">[Z] [X] [C]</span> 停止按鈕
+  </footer>
+
+  <!-- MODALS -->
+  <div id="dataModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-center items-center p-3">
+    <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg p-4 sm:p-5 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
+      <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+        <h3 class="text-base font-bold text-indigo-400">實戰數據與換金帳單</h3>
+        <button onclick="toggleModal('dataModal')" class="text-gray-400 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 space-y-2">
+        <div class="text-xs font-bold text-amber-400 border-b border-gray-800 pb-1">💵 機台實體換金結算 (1枚 = $4)</div>
+        <div class="grid grid-cols-3 gap-2 text-center text-xs pt-1">
+          <div>
+            <div class="text-gray-500">總投入現金</div>
+            <div id="modalCashSpent" class="font-digital text-rose-400 text-sm mt-0.5">$0</div>
+          </div>
+          <div>
+            <div class="text-gray-500">當前代幣折算</div>
+            <div id="modalCoinValue" class="font-digital text-emerald-400 text-sm mt-0.5">$0</div>
+          </div>
+          <div>
+            <div class="text-gray-500">實質淨損益</div>
+            <div id="modalNetProfit" class="font-digital text-amber-400 text-sm mt-0.5">$0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 text-center text-xs">
+        <div class="bg-gray-950 p-2 rounded border border-gray-800">
+          <div class="text-gray-400">出玉率 (PAYOUT)</div>
+          <div id="modalPayoutRate" class="font-digital text-emerald-400 text-sm mt-1">100.0%</div>
+        </div>
+        <div class="bg-gray-950 p-2 rounded border border-gray-800">
+          <div class="text-gray-400">總差枚數</div>
+          <div id="modalDiffCoins" class="font-digital text-amber-400 text-sm mt-1">+0 枚</div>
+        </div>
+        <div class="bg-gray-950 p-2 rounded border border-gray-800">
+          <div class="text-gray-400">合成大獎機率</div>
+          <div id="modalCombinedProb" class="font-digital text-cyan-400 text-sm mt-1">1/--</div>
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <div class="text-xs text-gray-400 font-bold flex justify-between">
+          <span>差枚數推移圖 (Slump Graph)</span>
+          <span class="text-[10px] text-gray-500">最新 200 局</span>
+        </div>
+        <div class="bg-gray-950 border border-gray-800 rounded-lg p-2">
+          <canvas id="slumpChart" class="w-full h-36 block"></canvas>
+        </div>
+      </div>
+
+      <div class="space-y-2 text-xs">
+        <div class="text-gray-400 font-bold">大獎歷史記錄 (最近 5 次)</div>
+        <div id="bonusHistoryList" class="bg-gray-950 border border-gray-800 rounded-lg p-2 text-gray-400 space-y-1 min-h-[60px]">
+          <div class="text-gray-600 text-center py-2">尚無大獎紀錄</div>
+        </div>
+      </div>
+
+      <button onclick="toggleModal('dataModal')" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition">關閉面板</button>
+    </div>
+  </div>
+
+  <div id="settingModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-center items-center p-3">
+    <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-sm p-4 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+        <h3 class="text-base font-bold text-amber-400">機台設定變更 (設定 1 ~ 6)</h3>
+        <button onclick="toggleModal('settingModal')" class="text-gray-400 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <button onclick="changeSetting(1)" class="setting-btn border p-2 rounded text-left transition bg-amber-900/40 border-amber-500 hover:bg-amber-900/80" data-s="1">
+          <div class="font-bold text-amber-300">設定 1 (一般常態/低)</div>
+          <div class="text-[10px] text-gray-400">BB 1/273 | RB 1/439</div>
+        </button>
+        <button onclick="changeSetting(2)" class="setting-btn border p-2 rounded text-left transition bg-gray-800 border-gray-700 hover:bg-amber-900/50" data-s="2">
+          <div class="font-bold text-amber-300">設定 2</div>
+          <div class="text-[10px] text-gray-400">BB 1/270 | RB 1/399</div>
+        </button>
+        <button onclick="changeSetting(3)" class="setting-btn border p-2 rounded text-left transition bg-gray-800 border-gray-700 hover:bg-amber-900/50" data-s="3">
+          <div class="font-bold text-amber-300">設定 3</div>
+          <div class="text-[10px] text-gray-400">BB 1/260 | RB 1/348</div>
+        </button>
+        <button onclick="changeSetting(4)" class="setting-btn border p-2 rounded text-left transition bg-gray-800 border-gray-700 hover:bg-amber-900/50" data-s="4">
+          <div class="font-bold text-amber-300">設定 4</div>
+          <div class="text-[10px] text-gray-400">BB 1/256 | RB 1/321</div>
+        </button>
+        <button onclick="changeSetting(5)" class="setting-btn border p-2 rounded text-left transition bg-gray-800 border-gray-700 hover:bg-amber-900/50" data-s="5">
+          <div class="font-bold text-amber-300">設定 5</div>
+          <div class="text-[10px] text-gray-400">BB 1/240 | RB 1/268</div>
+        </button>
+        <button onclick="changeSetting(6)" class="setting-btn border p-2 rounded text-left transition bg-gray-800 border-gray-700 hover:bg-amber-900/50" data-s="6">
+          <div class="font-bold text-amber-300">設定 6 (活動天花板)</div>
+          <div class="text-[10px] text-gray-400">BB 1/240 | RB 1/240</div>
+        </button>
+      </div>
+
+      <button onclick="toggleModal('settingModal')" class="w-full py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg font-bold text-xs transition">套用並確定</button>
+    </div>
+  </div>
+
+  <div id="guideModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-center items-center p-3">
+    <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md p-4 sm:p-5 space-y-3 shadow-2xl overflow-y-auto max-h-[85vh] text-xs">
+      <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+        <h3 class="text-base font-bold text-rose-400">經典拉霸機 打法與目押し攻略</h3>
+        <button onclick="toggleModal('guideModal')" class="text-gray-400 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <div class="space-y-3 text-gray-300 leading-relaxed">
+
+        <!-- 目押し技巧指南 -->
+        <div>
+          <p class="font-bold text-amber-300 text-sm">👁️ 精準「目押し」實戰技巧指南</p>
+          <ul class="list-disc list-inside space-y-1 mt-1 text-gray-400">
+            <li><strong class="text-amber-200">平時旋轉（通常時）</strong>：建議用 3 BET，按下第 1 個按鈕 [Z] 時瞄準左滾輪的 <strong class="text-rose-400">紅 7</strong> 或 <strong class="text-indigo-400">BAR</strong> 附近的櫻桃，防止櫻桃漏接（角櫻 2 枚、中櫻 4 枚）。</li>
+            <li><strong class="text-amber-200">FEVER! CHANCE 亮燈時</strong>：切換 1 BET 並開始目押し對齊：
+              <br/>• 想抓 <strong class="text-rose-400">BIG BONUS</strong>：三輪皆對準 <strong class="text-rose-400">777</strong>。
+              <br/>• 想抓 <strong class="text-emerald-400">REG BONUS</strong>：前兩輪瞄準 <strong class="text-rose-400">77</strong>，第 3 輪瞄準 <strong class="text-indigo-400">BAR</strong>。
+            </li>
+            <li><strong class="text-amber-200">4 格滑動（4コマ滑り）機制</strong>：實機每一局皆生效！若內部<strong class="text-rose-400">未抽中大獎</strong>，就算你精準對準 7 按下，滾輪也會自動滑動 1~4 格<strong class="text-rose-400">強制避開 777</strong>；只有在<strong class="text-emerald-400">內部已抽中大獎</strong>時，在 4 格之內按下才會自動幫你吸附對齊！</li>
+          </ul>
+        </div>
+
+        <div>
+          <p class="font-bold text-amber-300 text-sm">🎰 1 BET 與 3 BET 的機制差別</p>
+          <ul class="list-disc list-inside space-y-1 mt-1 text-gray-400">
+            <li><strong class="text-amber-200">1 BET (單線押注)</strong>：每轉花費 1 枚代幣。<strong>僅開啟中央水平 1 條中獎線</strong>（斜線或上下線無效）。適合幣數不多保命，或亮燈時對齊 777 大獎。</li>
+            <li><strong class="text-amber-200">3 BET (MAX BET 全線)</strong>：每轉花費 3 枚代幣。<strong>開啟全部 5 條中獎線</strong>（上/中/下橫線 + 2條對角斜線）。平時旋轉的標準配備，能確保小獎不漏接！</li>
+          </ul>
+        </div>
+
+        <div>
+          <p class="font-bold text-amber-300">💵 換金系統 (1:4 匯率)</p>
+          <p>點擊「💵 投入 $1,000」按鈕可獲得 250 枚代幣（相當於每枚代幣 $4）。每次投幣玩一局會由玩家預設的 BET 數自動扣除。</p>
+        </div>
+
+        <div>
+          <p class="font-bold text-amber-300">⚡ AUTO 自動模擬功能</p>
+          <p>點擊標題列的 <span class="text-emerald-400 font-bold">AUTO</span> 按鈕可啟動自動旋轉，代幣用完時會自動加購 $1,000。</p>
+        </div>
+
+        <!-- 💡 新增：亮燈時切換 1 BET 密技 -->
+        <div class="bg-amber-950/40 border border-amber-600/50 p-2.5 rounded-xl">
+            <p class="font-bold text-amber-300 text-sm">💡 進階省幣密技：FEVER 燈亮時切換 1 BET！</p>
+            <p class="mt-1 text-gray-300 leading-relaxed">
+                當告知燈亮起確定內部已中大獎時，<strong>強烈建議將模式切換為「1 BET (單線押注)」再進行目押し對齊 777</strong>！<br/>
+                • <strong>省代幣</strong>：大獎只要在中獎線（中央水平線）對齊即可觸發，投 1 BET 能比 3 BET <strong>直接省下 2 枚代幣</strong>。<br/>
+                • <strong>降低失誤成本</strong>：即使目押し失敗沒對齊，也只消耗 1 枚代幣！
+            </p>
+        </div>
+      </div>
+
+      <button onclick="toggleModal('guideModal')" class="w-full py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold transition">開始實戰</button>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT ENGINE -->
+  <script>
+    const state = {
+      credits: 0,
+      totalCashSpent: 0,
+      bet: 0,
+      selectedBet: 3, // 預設 3 BET
+      setting: 1,     // 預設設定 1
+      autoSim: false,
+      soundMuted: false,
+      mode: 'NORMAL',
+      isFreeSpin: false,
+      
+      totalGames: 0,
+      currentGames: 0,
+      bbCount: 0,
+      rbCount: 0,
+      totalPayout: 0,
+      totalBetCoins: 0,
+      history: [],
+      slumpHistory: [0],
+
+      flag: null,
+      noticeTiming: null,
+      feverLit: false,
+
+      spinning: [false, false, false],
+      stopped: [true, true, true],
+      reelPos: [0, 0, 0],
+      stopIndex: [0, 0, 0],
+      winLines: []
+    };
+
+    let autoTimer = null;
+
+    const SETTING_PROBS = {
+      1: { bb: 273.1, rb: 439.8, grape: 6.35 },
+      2: { bb: 269.7, rb: 399.6, grape: 6.29 },
+      3: { bb: 260.1, rb: 348.6, grape: 6.25 },
+      4: { bb: 256.0, rb: 321.3, grape: 6.20 },
+      5: { bb: 240.9, rb: 268.6, grape: 6.18 },
+      6: { bb: 240.9, rb: 240.9, grape: 6.18 }
+    };
+
+    const REEL_STRIPS = [
+      [0, 4, 5, 3, 4, 2, 0, 4, 5, 1, 4, 3, 5, 4, 2, 0, 4, 5, 3, 4, 1],
+      [4, 0, 5, 3, 4, 1, 5, 4, 3, 0, 5, 4, 1, 5, 3, 4, 0, 5, 4, 3, 5],
+      [0, 5, 4, 3, 1, 5, 4, 3, 0, 5, 4, 3, 1, 5, 4, 3, 0, 5, 4, 3, 5]
+    ];
+
+    const PAYLINES = [
+      { name: 'TOP', pos: [0, 0, 0], yRatios: [0.2, 0.2, 0.2] },
+      { name: 'CENTER', pos: [1, 1, 1], yRatios: [0.5, 0.5, 0.5] },
+      { name: 'BOTTOM', pos: [2, 2, 2], yRatios: [0.8, 0.8, 0.8] },
+      { name: 'DIAG_DOWN', pos: [0, 1, 2], yRatios: [0.2, 0.5, 0.8] },
+      { name: 'DIAG_UP', pos: [2, 1, 0], yRatios: [0.8, 0.5, 0.2] }
+    ];
+
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function toggleSound() {
+      state.soundMuted = !state.soundMuted;
+      const btn = document.getElementById('soundToggleBtn');
+      if (state.soundMuted) {
+        btn.querySelector('span').innerHTML = '🔇 音效: <strong id="soundStatusText" class="text-rose-400">OFF</strong>';
+      } else {
+        btn.querySelector('span').innerHTML = '🔊 音效: <strong id="soundStatusText" class="text-emerald-400">ON</strong>';
+      }
+    }
+
+    function playBeep(freq, duration, type='sine') {
+      if (!audioCtx || state.soundMuted) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function playFeverSound() {
+      if (!audioCtx || state.soundMuted) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.18);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.18);
+      } catch (e) {}
+    }
+
+    function playBbFanfare() {
+      if (!audioCtx || state.soundMuted) return;
+      const notes = [523.25, 659.25, 783.99, 1046.50, 880, 1046.50];
+      notes.forEach((freq, idx) => {
+        setTimeout(() => playBeep(freq, 0.25, 'triangle'), idx * 110);
+      });
+    }
+
+    function buyCoins() {
+      initAudio();
+      state.totalCashSpent += 1000;
+      state.credits += 250;
+      playBeep(880, 0.1, 'sine');
+      setTimeout(() => playBeep(1174.66, 0.15, 'sine'), 100);
+      updateUI();
+    }
+
+    function selectBetMode(betVal) {
+      if (state.spinning.some(s => s) || !state.stopped.every(s => s)) return;
+      state.selectedBet = betVal;
+      playBeep(520, 0.08);
+      updateBetUI();
+    }
+
+    function updateBetUI() {
+      const btn1 = document.getElementById('btnBet1');
+      const btn3 = document.getElementById('btnBet3');
+      const activeLinesText = document.getElementById('activeLinesText');
+
+      if (state.selectedBet === 1) {
+        btn1.className = 'btn-push py-2 rounded-lg font-bold text-xs border border-amber-500 bg-amber-600 text-gray-950 transition flex justify-center items-center gap-1 shadow-lg';
+        btn3.className = 'btn-push py-2 rounded-lg font-bold text-xs border border-gray-700 bg-gray-800 text-gray-300 transition flex justify-center items-center gap-1';
+        activeLinesText.innerText = '1 條線 (中央)';
+        activeLinesText.className = 'text-xs sm:text-sm font-bold text-cyan-400';
+      } else {
+        btn3.className = 'btn-push py-2 rounded-lg font-bold text-xs border border-amber-500 bg-amber-600 text-gray-950 transition flex justify-center items-center gap-1 shadow-lg';
+        btn1.className = 'btn-push py-2 rounded-lg font-bold text-xs border border-gray-700 bg-gray-800 text-gray-300 transition flex justify-center items-center gap-1';
+        activeLinesText.innerText = '5 條線 (全線)';
+        activeLinesText.className = 'text-xs sm:text-sm font-bold text-amber-400';
+      }
+    }
+
+    const canvas = document.getElementById('slotCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function drawSymbol(ctx, symId, x, y, width, height) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      if (symId === 0) { // RED 7
+        ctx.fillStyle = '#ef4444';
+        ctx.font = `900 ${height * 0.75}px 'Chakra Petch', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#f87171';
+        ctx.shadowBlur = 10;
+        ctx.fillText('7', width / 2, height / 2);
+      } else if (symId === 1) { // BLUE BAR
+        ctx.fillStyle = '#2563eb';
+        ctx.fillRect(width * 0.15, height * 0.3, width * 0.7, height * 0.4);
+        ctx.strokeStyle = '#60a5fa';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(width * 0.15, height * 0.3, width * 0.7, height * 0.4);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `900 ${height * 0.25}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('BAR', width / 2, height / 2);
+      } else if (symId === 2) { // CHERRY
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.arc(width * 0.38, height * 0.6, height * 0.18, 0, Math.PI * 2);
+        ctx.arc(width * 0.62, height * 0.6, height * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#16a34a';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(width * 0.38, height * 0.45);
+        ctx.lineTo(width * 0.5, height * 0.25);
+        ctx.lineTo(width * 0.62, height * 0.45);
+        ctx.stroke();
+      } else if (symId === 3) { // BELL
+        const cx = width / 2;
+        const topY = height * 0.32;
+        const botY = height * 0.70;
+
+        ctx.strokeStyle = '#ca8a04';
+        ctx.lineWidth = Math.max(1.5, height * 0.035);
+        ctx.beginPath();
+        ctx.arc(cx, height * 0.22, height * 0.05, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#78350f';
+        ctx.beginPath();
+        ctx.arc(cx, height * 0.76, height * 0.05, 0, Math.PI * 2);
+        ctx.fill();
+
+        const bellGrad = ctx.createLinearGradient(cx - width * 0.22, topY, cx + width * 0.22, botY);
+        bellGrad.addColorStop(0, '#fef08a');
+        bellGrad.addColorStop(0.35, '#eab308');
+        bellGrad.addColorStop(0.85, '#ca8a04');
+        bellGrad.addColorStop(1, '#854d0e');
+
+        const rTop = width * 0.17;
+        ctx.fillStyle = bellGrad;
+        ctx.beginPath();
+        ctx.arc(cx, height * 0.44, rTop, Math.PI, 0, false);
+        ctx.quadraticCurveTo(cx + width * 0.24, height * 0.58, cx + width * 0.24, botY);
+        ctx.lineTo(cx - width * 0.24, botY);
+        ctx.quadraticCurveTo(cx - width * 0.24, height * 0.58, cx - rTop, height * 0.44);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.ellipse(cx, botY, width * 0.25, height * 0.04, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#a16207';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      } else if (symId === 4) { // GRAPE
+        ctx.strokeStyle = '#15803d';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(width * 0.5, height * 0.35);
+        ctx.quadraticCurveTo(width * 0.5, height * 0.18, width * 0.58, height * 0.15);
+        ctx.stroke();
+
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.ellipse(width * 0.42, height * 0.22, height * 0.1, height * 0.05, -Math.PI / 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        const berries = [
+          [0.36, 0.38, 0.11], [0.5, 0.36, 0.115], [0.64, 0.38, 0.11],
+          [0.43, 0.53, 0.11], [0.57, 0.53, 0.11],
+          [0.5, 0.68, 0.115]
+        ];
+
+        berries.forEach(([cx, cy, rRatio]) => {
+          const bx = width * cx;
+          const by = height * cy;
+          const br = height * rRatio;
+
+          const g = ctx.createRadialGradient(bx - br * 0.3, by - br * 0.3, br * 0.1, bx, by, br);
+          g.addColorStop(0, '#f3e8ff');
+          g.addColorStop(0.25, '#c084fc');
+          g.addColorStop(0.7, '#7e22ce');
+          g.addColorStop(1, '#3b0764');
+
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(bx, by, br, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+      } else if (symId === 5) { // REPLAY
+        ctx.fillStyle = '#06b6d4';
+        ctx.beginPath();
+        ctx.arc(width / 2, height / 2, height * 0.28, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${height * 0.14}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('REPLAY', width / 2, height / 2);
+      }
+      ctx.restore();
+    }
+
+    function renderReels() {
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const reelWidth = w / 3;
+      const symbolHeight = h / 3;
+
+      for (let r = 0; r < 3; r++) {
+        const strip = REEL_STRIPS[r];
+        const pos = state.reelPos[r];
+        const reelX = r * reelWidth;
+
+        ctx.fillStyle = '#030712';
+        ctx.fillRect(reelX + 2, 0, reelWidth - 4, h);
+
+        const floorPos = Math.floor(pos);
+        const subOffset = pos - floorPos;
+
+        for (let i = -1; i <= 3; i++) {
+          const idx = (floorPos + i + 2100) % 21;
+          const symId = strip[idx];
+          const y = (i - subOffset) * symbolHeight;
+
+          drawSymbol(ctx, symId, reelX, y, reelWidth, symbolHeight);
+        }
+
+        ctx.strokeStyle = '#1f2937';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(reelX, 0, reelWidth, h);
+      }
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, symbolHeight); ctx.lineTo(w, symbolHeight);
+      ctx.moveTo(0, symbolHeight * 2); ctx.lineTo(w, symbolHeight * 2);
+      ctx.stroke();
+
+      for (let r = 0; r < 3; r++) {
+        if (state.spinning[r]) {
+          state.reelPos[r] = (state.reelPos[r] - 0.42 + 2100) % 21;
+        }
+      }
+
+      requestAnimationFrame(renderReels);
+    }
+
+    function renderPaylineOverlay() {
+      const overlay = document.getElementById('paylineOverlay');
+      overlay.innerHTML = '';
+
+      if (state.winLines.length === 0) return;
+
+      const rect = overlay.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      state.winLines.forEach(line => {
+        const polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+        const points = line.yRatios.map((yRatio, xIdx) => {
+          const x = (xIdx + 0.5) * (w / 3);
+          const y = yRatio * h;
+          return `${x},${y}`;
+        }).join(" ");
+
+        polyline.setAttribute("points", points);
+        polyline.setAttribute("stroke", "#facc15");
+        polyline.setAttribute("stroke-width", "6");
+        polyline.setAttribute("fill", "none");
+        polyline.setAttribute("stroke-linecap", "round");
+        polyline.setAttribute("class", "line-win-flash");
+
+        overlay.appendChild(polyline);
+      });
+    }
+
+    function drawLottery() {
+      const prob = SETTING_PROBS[state.setting];
+
+      if (state.feverLit) return;
+
+      const rand = Math.random() * 1000;
+      const bbThresh = 1000 / prob.bb;
+      const rbThresh = bbThresh + (1000 / prob.rb);
+      const grapeThresh = rbThresh + (1000 / prob.grape);
+      const replayThresh = grapeThresh + 130;
+      const cherryThresh = replayThresh + 30;
+
+      if (rand < bbThresh) {
+        state.flag = 'BB';
+        state.noticeTiming = Math.random() < 0.25 ? 'PRE' : 'POST';
+      } else if (rand < rbThresh) {
+        state.flag = 'RB';
+        state.noticeTiming = Math.random() < 0.25 ? 'PRE' : 'POST';
+      } else if (rand < grapeThresh) state.flag = 'GRAPE';
+      else if (rand < replayThresh) state.flag = 'REPLAY';
+      else if (rand < cherryThresh) state.flag = 'CHERRY';
+      else state.flag = null;
+    }
+
+    function triggerFeverNotice() {
+      if (!state.feverLit) {
+        state.feverLit = true;
+        playFeverSound();
+        updateUI();
+      }
+    }
+
+    function calculateSlipStop(reelIdx, targetIndex) {
+      const strip = REEL_STRIPS[reelIdx];
+
+      for (let slip = 0; slip <= 4; slip++) {
+        const candidateStop = (targetIndex + slip) % 21;
+        const tempStops = [...state.stopIndex];
+        tempStops[reelIdx] = candidateStop;
+
+        if (!state.flag) {
+          const candidateSym = strip[(candidateStop + 1) % 21];
+          if (candidateSym === 0 || candidateSym === 1) continue;
+
+          if (reelIdx === 0) {
+            const symTop = strip[candidateStop % 21];
+            const symMid = strip[(candidateStop + 1) % 21];
+            const symBot = strip[(candidateStop + 2) % 21];
+            if (symTop === 2 || symMid === 2 || symBot === 2) continue;
+          }
+
+          if (reelIdx === 2) {
+            let accidentalWin = false;
+            const grid = [0, 1, 2].map(r => {
+              const st = (r === 2) ? candidateStop : tempStops[r];
+              const s = REEL_STRIPS[r];
+              return [s[st % 21], s[(st + 1) % 21], s[(st + 2) % 21]];
+            });
+
+            const activeLines = (state.bet === 1) ? [PAYLINES[1]] : PAYLINES;
+
+            for (const line of activeLines) {
+              const s0 = grid[0][line.pos[0]];
+              const s1 = grid[1][line.pos[1]];
+              const s2 = grid[2][line.pos[2]];
+              if (s0 === s1 && s1 === s2) {
+                accidentalWin = true;
+                break;
+              }
+            }
+            if (accidentalWin) continue;
+          }
+        }
+
+        if (state.flag === 'CHERRY' && reelIdx === 0) {
+          const candidateSym = strip[(candidateStop + 1) % 21];
+          if (candidateSym === 2) return candidateStop;
+        }
+
+        return candidateStop;
+      }
+
+      return (targetIndex + 1) % 21;
+    }
+
+    function handleStartLever() {
+      if (state.spinning.some(s => s) || !state.stopped.every(s => s)) return;
+
+      initAudio();
+
+      const requiredCost = state.isFreeSpin ? 0 : state.selectedBet;
+
+      if (state.credits < requiredCost) {
+        if (state.autoSim) {
+          buyCoins();
+        } else {
+          alert('代幣不足！請先點擊【💵 投入 $1,000】購買代幣。');
+          return;
+        }
+      }
+
+      if (!state.isFreeSpin) {
+        state.credits -= requiredCost;
+        state.totalBetCoins += requiredCost;
+        state.bet = requiredCost;
+      } else {
+        state.bet = state.selectedBet;
+      }
+
+      state.winLines = [];
+      renderPaylineOverlay();
+
+      state.totalGames++;
+      state.currentGames++;
+
+      drawLottery();
+
+      if ((state.flag === 'BB' || state.flag === 'RB') && state.noticeTiming === 'PRE') {
+        triggerFeverNotice();
+      }
+
+      state.spinning = [true, true, true];
+      state.stopped = [false, false, false];
+
+      document.getElementById('stop1').disabled = false;
+      document.getElementById('stop2').disabled = false;
+      document.getElementById('stop3').disabled = false;
+
+      playBeep(600, 0.1, 'sawtooth');
+      updateUI();
+    }
+
+    function stopReel(reelIdx) {
+      if (!state.spinning[reelIdx] || state.stopped[reelIdx]) return;
+
+      initAudio();
+      playBeep(300, 0.05);
+
+      const rawStop = Math.round(state.reelPos[reelIdx]) % 21;
+      const finalStop = calculateSlipStop(reelIdx, rawStop);
+
+      state.spinning[reelIdx] = false;
+      state.reelPos[reelIdx] = finalStop;
+      state.stopIndex[reelIdx] = finalStop;
+      state.stopped[reelIdx] = true;
+
+      document.getElementById(`stop${reelIdx + 1}`).disabled = true;
+
+      if (state.stopped.every(s => s)) {
+        checkWinLogic();
+      } else if (state.autoSim) {
+        autoTimer = setTimeout(() => {
+          if (state.autoSim) stopReel(reelIdx + 1);
+        }, 150);
+      }
+    }
+
+    function toggleAutoSim() {
+      state.autoSim = !state.autoSim;
+      const btn = document.getElementById('autoSimBtn');
+      const text = document.getElementById('autoSimStatusText');
+
+      if (state.autoSim) {
+        btn.className = 'bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded flex items-center gap-1 transition font-bold shadow';
+        text.className = 'text-amber-200 font-extrabold';
+        text.innerText = 'ON';
+        runAutoLoop();
+      } else {
+        btn.className = 'bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 px-2.5 py-1 rounded flex items-center gap-1 transition';
+        text.className = 'text-gray-400';
+        text.innerText = 'OFF';
+        if (autoTimer) clearTimeout(autoTimer);
+      }
+    }
+
+    function runAutoLoop() {
+      if (!state.autoSim) return;
+
+      if (state.stopped.every(s => s) && !state.spinning.some(s => s)) {
+        handleStartLever();
+
+        autoTimer = setTimeout(() => {
+          if (state.autoSim) stopReel(0);
+        }, 200);
+      }
+    }
+
+    function checkWinLogic() {
+      state.isFreeSpin = false;
+
+      const visibleGrid = [0, 1, 2].map(r => {
+        const stop = state.stopIndex[r];
+        const strip = REEL_STRIPS[r];
+        return [
+          strip[(stop) % 21],
+          strip[(stop + 1) % 21],
+          strip[(stop + 2) % 21]
+        ];
+      });
+
+      let payout = 0;
+      let hitBB = false;
+      let hitRB = false;
+      state.winLines = [];
+
+      const activePaylines = (state.bet === 1) ? [PAYLINES[1]] : PAYLINES;
+
+      activePaylines.forEach(line => {
+        const s0 = visibleGrid[0][line.pos[0]];
+        const s1 = visibleGrid[1][line.pos[1]];
+        const s2 = visibleGrid[2][line.pos[2]];
+
+        if (s0 === s1 && s1 === s2) {
+          state.winLines.push(line);
+
+          if (s0 === 0) { hitBB = true; payout += 300; }
+          else if (s0 === 1) { hitRB = true; payout += 100; }
+          else if (s0 === 4) payout += 8;
+          else if (s0 === 3) payout += 10;
+          else if (s0 === 5) {
+            state.isFreeSpin = true;
+          }
+        }
+      });
+
+      const leftTop = visibleGrid[0][0];
+      const leftMid = visibleGrid[0][1];
+      const leftBot = visibleGrid[0][2];
+
+      if (leftMid === 2) payout += 4;
+      else if (leftTop === 2 || leftBot === 2) payout += 2;
+
+      if ((state.flag === 'BB' || state.flag === 'RB') && state.noticeTiming === 'POST') {
+        triggerFeverNotice();
+      }
+
+      if (hitBB) {
+        state.bbCount++;
+        state.currentGames = 0;
+        state.feverLit = false;
+        state.flag = null;
+        playBbFanfare();
+        addHistory('BIG BONUS');
+      } else if (hitRB) {
+        state.rbCount++;
+        state.currentGames = 0;
+        state.feverLit = false;
+        state.flag = null;
+        playBbFanfare();
+        addHistory('REG BONUS');
+      }
+
+      if (payout > 0) {
+        state.credits += payout;
+        state.totalPayout += payout;
+        document.getElementById('payoutDisplay').innerText = payout;
+        playBeep(1200, 0.15, 'triangle');
+      } else {
+        document.getElementById('payoutDisplay').innerText = 0;
+      }
+
+      const currentDiff = state.totalPayout - state.totalBetCoins;
+      state.slumpHistory.push(currentDiff);
+      if (state.slumpHistory.length > 200) state.slumpHistory.shift();
+
+      renderPaylineOverlay();
+      updateUI();
+
+      if (state.autoSim) {
+        autoTimer = setTimeout(runAutoLoop, 400);
+      }
+    }
+
+    function renderSlumpChart() {
+      const c = document.getElementById('slumpChart');
+      if (!c) return;
+      const cx = c.getContext('2d');
+      c.width = c.clientWidth * window.devicePixelRatio;
+      c.height = c.clientHeight * window.devicePixelRatio;
+
+      const w = c.width;
+      const h = c.height;
+      const data = state.slumpHistory;
+
+      cx.clearRect(0, 0, w, h);
+
+      const maxVal = Math.max(1000, ...data.map(Math.abs));
+      const zeroY = h / 2;
+
+      cx.strokeStyle = '#374151';
+      cx.lineWidth = 1;
+      cx.beginPath();
+      cx.moveTo(0, zeroY); cx.lineTo(w, zeroY);
+      cx.stroke();
+
+      if (data.length < 2) return;
+
+      cx.strokeStyle = '#10b981';
+      cx.lineWidth = 3;
+      cx.beginPath();
+
+      const stepX = w / (data.length - 1);
+      data.forEach((val, i) => {
+        const x = i * stepX;
+        const y = zeroY - (val / maxVal) * (h * 0.4);
+        if (i === 0) cx.moveTo(x, y);
+        else cx.lineTo(x, y);
+      });
+      cx.stroke();
+    }
+
+    function addHistory(type) {
+      state.history.unshift({ type, games: state.currentGames });
+      if (state.history.length > 5) state.history.pop();
+    }
+
+    function updateUI() {
+      document.getElementById('creditDisplay').innerText = state.credits;
+      document.getElementById('cashSpentDisplay').innerText = `$${state.totalCashSpent.toLocaleString()}`;
+      document.getElementById('statTotalGames').innerText = state.totalGames;
+      document.getElementById('statCurrentGames').innerText = state.currentGames;
+      document.getElementById('statBB').innerText = state.bbCount;
+      document.getElementById('statRB').innerText = state.rbCount;
+
+      const lamp = document.getElementById('feverLamp');
+      const feverText = document.getElementById('feverText');
+      const chanceText = document.getElementById('chanceText');
+
+      if (state.feverLit) {
+        lamp.classList.add('bg-rose-950', 'border-rose-500');
+        feverText.classList.add('fever-glow', 'text-rose-500');
+        chanceText.classList.add('text-amber-400');
+      } else {
+        lamp.classList.remove('bg-rose-950', 'border-rose-500');
+        feverText.classList.remove('fever-glow', 'text-rose-500');
+        chanceText.classList.remove('text-amber-400');
+      }
+
+      const payoutRate = state.totalBetCoins > 0 ? ((state.totalPayout / state.totalBetCoins) * 100).toFixed(1) : '100.0';
+      document.getElementById('modalPayoutRate').innerText = `${payoutRate}%`;
+      
+      const diffCoins = state.totalPayout - state.totalBetCoins;
+      document.getElementById('modalDiffCoins').innerText = `${diffCoins >= 0 ? '+' : ''}${diffCoins} 枚`;
+
+      const currentCoinValue = state.credits * 4;
+      const netProfit = currentCoinValue - state.totalCashSpent;
+      document.getElementById('modalCashSpent').innerText = `$${state.totalCashSpent.toLocaleString()}`;
+      document.getElementById('modalCoinValue').innerText = `$${currentCoinValue.toLocaleString()}`;
+      document.getElementById('modalNetProfit').innerText = `${netProfit >= 0 ? '+' : ''}$${netProfit.toLocaleString()}`;
+      document.getElementById('modalNetProfit').className = netProfit >= 0 ? 'font-digital text-emerald-400 text-sm mt-0.5' : 'font-digital text-rose-400 text-sm mt-0.5';
+
+      const totalBonus = state.bbCount + state.rbCount;
+      document.getElementById('modalCombinedProb').innerText = totalBonus > 0 ? `1/${Math.round(state.totalGames / totalBonus)}` : '1/--';
+
+      const historyEl = document.getElementById('bonusHistoryList');
+      if (state.history.length > 0) {
+        historyEl.innerHTML = state.history.map((item, idx) => `
+          <div class="flex justify-between items-center bg-gray-900 px-2 py-1 rounded border border-gray-800">
+            <span class="${item.type === 'BIG BONUS' ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}">#${state.history.length - idx} ${item.type}</span>
+            <span class="font-digital text-amber-400">${item.games} G</span>
+          </div>
+        `).join('');
+      }
+
+      updateBetUI();
+      renderSlumpChart();
+    }
+
+    function changeSetting(s) {
+      state.setting = s;
+      document.getElementById('currentSettingHeader').innerText = `設定 ${s}`;
+      document.querySelectorAll('.setting-btn').forEach(btn => {
+        const setVal = parseInt(btn.getAttribute('data-s'));
+        if (setVal === s) {
+          btn.className = 'setting-btn border p-2 rounded text-left transition bg-amber-900/40 border-amber-500';
+        } else {
+          btn.className = 'setting-btn border p-2 rounded text-left transition bg-gray-800 border-gray-700 hover:bg-amber-900/50';
+        }
+      });
+      toggleModal('settingModal');
+    }
+
+    function toggleModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('hidden');
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleStartLever();
+      } else if (e.code === 'KeyZ') {
+        stopReel(0);
+      } else if (e.code === 'KeyX') {
+        stopReel(1);
+      } else if (e.code === 'KeyC') {
+        stopReel(2);
+      }
+    });
+
+    requestAnimationFrame(renderReels);
+    updateUI();
+  </script>
+</body>
+</html>
