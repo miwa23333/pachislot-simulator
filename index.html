@@ -25,7 +25,6 @@
       font-family: 'Chakra Petch', sans-serif;
     }
 
-    /* FEVER CHANCE 燈箱發光動畫 */
     .fever-glow {
       text-shadow: 0 0 10px #f43f5e, 0 0 20px #f43f5e, 0 0 35px #e11d48, 0 0 50px #be123c;
       animation: pulse-fever 0.6s infinite alternate ease-in-out;
@@ -36,7 +35,6 @@
       100% { opacity: 1; filter: drop-shadow(0 0 32px rgba(244, 63, 94, 1)); }
     }
 
-    /* 物理按鈕觸感 */
     .btn-push {
       transition: all 0.05s ease;
       box-shadow: 0 6px 0 rgba(0,0,0,0.6), inset 0 2px 2px rgba(255,255,255,0.4);
@@ -46,13 +44,11 @@
       box-shadow: 0 2px 0 rgba(0,0,0,0.6), inset 0 1px 1px rgba(0,0,0,0.4);
     }
 
-    /* 機台金屬質感 */
     .cabinet-metal {
       background: linear-gradient(145deg, #1f293d 0%, #111827 50%, #0d121d 100%);
       box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 1px 2px rgba(255,255,255,0.1);
     }
 
-    /* 中獎線閃爍 */
     @keyframes line-flash {
       0%, 100% { opacity: 1; filter: drop-shadow(0 0 8px #facc15); }
       50% { opacity: 0.2; filter: drop-shadow(0 0 2px #facc15); }
@@ -81,8 +77,23 @@
     </div>
 
     <div class="flex items-center gap-1.5 flex-wrap text-xs">
+      <!-- 模式選擇按鈕 -->
+      <button onclick="toggleModal('modeModal')" class="bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 border border-emerald-700/50 px-2 py-1 rounded flex items-center gap-1 transition">
+        <span>🎮 <strong id="currentModeHeader" class="text-emerald-300">練習模式</strong></span>
+      </button>
+
+      <!-- 獨立顯示的階級按鈕 -->
+      <button id="rankBtnHeader" onclick="openRankModal()" class="bg-purple-900/80 hover:bg-purple-800 text-purple-200 border border-purple-700/50 px-2 py-1 rounded flex items-center gap-1 transition">
+        <span>🏆 <strong id="rankBadgeHeader" class="font-black text-xs text-purple-300">階級 C</strong></span>
+      </button>
+
+      <!-- 生存模式專屬：離台結算鍵 -->
+      <button id="cashOutBtn" onclick="openSettlementModal()" class="hidden bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-extrabold px-2.5 py-1 rounded border border-yellow-300 shadow flex items-center gap-1 transition text-xs btn-push">
+        <span>💰 離台結算</span>
+      </button>
+
       <button id="soundToggleBtn" onclick="toggleSound()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 px-2 py-1 rounded flex items-center gap-1 transition">
-        <span>🔊 音效: <strong id="soundStatusText" class="text-emerald-400">ON</strong></span>
+        <span>🔊 <strong id="soundStatusText" class="text-emerald-400">ON</strong></span>
       </button>
 
       <button id="autoSimBtn" onclick="toggleAutoSim()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 px-2.5 py-1 rounded flex items-center gap-1 transition">
@@ -90,8 +101,7 @@
       </button>
 
       <button onclick="toggleModal('dataModal')" class="bg-indigo-900/80 hover:bg-indigo-800 text-indigo-200 border border-indigo-700/50 px-2 py-1 rounded flex items-center gap-1 transition">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-        <span>數據帳單</span>
+        <span>帳單</span>
       </button>
 
       <button onclick="toggleModal('settingModal')" class="bg-amber-900/80 hover:bg-amber-800 text-amber-200 border border-amber-700/50 px-2 py-1 rounded flex items-center gap-1 transition">
@@ -173,14 +183,14 @@
         </div>
 
         <div class="col-span-4 flex flex-col">
-          <span class="text-[10px] text-gray-400 font-bold">總投入金額 ($)</span>
-          <span id="cashSpentDisplay" class="font-digital text-rose-400 text-xs sm:text-sm">$0</span>
+          <span class="text-[10px] text-gray-400 font-bold">當前資產折算 ($)</span>
+          <span id="assetDisplay" class="font-digital text-emerald-400 text-xs sm:text-sm">$1,000</span>
         </div>
 
         <div class="col-span-3 flex justify-end">
-          <button onclick="buyCoins()" class="btn-push bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs px-2.5 py-1.5 rounded-lg border border-emerald-400/50 shadow flex flex-col items-center leading-tight">
+          <button id="buyCoinsBtn" onclick="buyCoins()" class="btn-push bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs px-2.5 py-1.5 rounded-lg border border-emerald-400/50 shadow flex flex-col items-center leading-tight disabled:opacity-40 disabled:cursor-not-allowed">
             <span>💵 投入 $1,000</span>
-            <span class="text-[9px] text-emerald-200 font-normal">(換250枚)</span>
+            <span id="buyCoinsSubtext" class="text-[9px] text-emerald-200 font-normal">(換250枚)</span>
           </button>
         </div>
       </div>
@@ -227,6 +237,149 @@
   </footer>
 
   <!-- MODALS -->
+
+  <!-- 階級門檻與代幣對照彈窗 RANK MODAL -->
+  <div id="rankModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-center items-center p-3">
+    <div class="bg-gray-900 border border-purple-500/80 rounded-2xl w-full max-w-md p-4 sm:p-5 space-y-4 shadow-2xl overflow-y-auto max-h-[85vh]">
+      <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+        <h3 class="text-base font-bold text-purple-300 flex items-center gap-1.5">
+          <span>🏆 生存階級與目標代幣表</span>
+        </h3>
+        <button onclick="toggleModal('rankModal')" class="text-gray-400 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 text-center space-y-1">
+        <div class="text-xs text-gray-400">目前持有狀態</div>
+        <div class="flex justify-center items-center gap-3">
+          <span id="rankModalCurrentCoins" class="font-digital text-emerald-400 text-sm">250 枚</span>
+          <span id="rankModalCurrentAsset" class="font-digital text-emerald-400 text-sm">($1,000)</span>
+        </div>
+        <div id="rankModalCurrentBadge" class="mt-1 inline-block text-xs font-black px-3 py-1 rounded-lg shadow">階級 C</div>
+      </div>
+
+      <div class="space-y-1.5 text-xs">
+        <div class="text-gray-400 font-bold mb-1">達到各階級所需的「代幣數」與「折算金額」：</div>
+        <div id="rankListContainer" class="space-y-1.5 max-h-[48vh] overflow-y-auto pr-1">
+          <!-- JS 動態渲染列表 -->
+        </div>
+      </div>
+
+      <button onclick="toggleModal('rankModal')" class="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-bold text-xs transition shadow btn-push">關閉面板</button>
+    </div>
+  </div>
+
+  <!-- 離台結算彈窗 SETTLEMENT MODAL -->
+  <div id="settlementModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex justify-center items-center p-3">
+    <div class="bg-gray-900 border-2 border-amber-500 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl text-center">
+      <div class="space-y-1">
+        <span class="text-3xl">🎰</span>
+        <h3 class="text-xl font-black text-amber-400 tracking-wider">離台結算報告</h3>
+        <p class="text-xs text-gray-400">真實機台離場結算結果</p>
+      </div>
+
+      <!-- 階級勳章面板 -->
+      <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 flex flex-col items-center justify-center gap-1.5 shadow-inner">
+        <div class="text-[11px] text-gray-400 font-bold">最終獲得階級</div>
+        <div id="settleRankBadge" class="text-xl font-black px-4 py-1.5 rounded-xl border shadow-lg">C 級 (開局持平)</div>
+        <p id="settleRankComment" class="text-xs text-amber-300/90 mt-1 italic">「平穩結算！成功保留原始本金離開機台。」</p>
+      </div>
+
+      <div class="bg-gray-950 p-3.5 rounded-xl border border-gray-800 space-y-2 text-xs">
+        <div class="text-amber-400 font-bold border-b border-gray-800 pb-1">💵 戰績與換金總帳單 (起始 $1,000)</div>
+        <div class="grid grid-cols-2 gap-2.5 text-gray-300 pt-1 text-left">
+          <div>最終持有代幣：<strong id="settleCoins" class="text-emerald-400 font-digital">250 枚</strong></div>
+          <div>最終折算資產：<strong id="settleAssets" class="text-emerald-400 font-digital">$1,000</strong></div>
+          <div>實質淨損益：<strong id="settleNetProfit" class="text-amber-400 font-digital">+$0</strong></div>
+          <div>總遊玩轉數：<strong id="settleTotalGames" class="text-emerald-400 font-digital">0 G</strong></div>
+          <div>BB 次數：<strong id="settleBB" class="text-emerald-400 font-digital">0</strong></div>
+          <div>RB 次數：<strong id="settleRB" class="text-emerald-400 font-digital">0</strong></div>
+          <div class="col-span-2">出玉率 (PAYOUT)：<strong id="settlePayoutRate" class="text-emerald-400 font-digital">100.0%</strong></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 pt-1">
+        <button onclick="selectGameMode('SURVIVAL')" class="col-span-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold text-xs transition border border-rose-400 shadow btn-push">
+          🔄 再戰生存
+        </button>
+        <button onclick="toggleModal('settlementModal', false)" class="col-span-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg font-bold text-xs transition border border-gray-600">
+          👀 觀看盤面
+        </button>
+        <button onclick="toggleModal('modeModal', true); toggleModal('settlementModal', false);" class="col-span-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition border border-indigo-400 btn-push">
+          🎮 切換模式
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模式選擇彈窗 MODE MODAL -->
+  <div id="modeModal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex justify-center items-center p-3">
+    <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl text-center">
+      <div>
+        <h3 class="text-xl font-black text-amber-400 tracking-wider">🎮 選擇遊戲模式</h3>
+        <p class="text-xs text-gray-400 mt-1">請選擇您本次挑戰的遊戲規則</p>
+      </div>
+
+      <div class="grid grid-cols-1 gap-3">
+        <!-- 練習模式 -->
+        <button onclick="selectGameMode('PRACTICE')" class="btn-push p-4 rounded-xl border-2 border-emerald-500/80 bg-gradient-to-r from-emerald-950/60 to-teal-900/60 hover:from-emerald-900/80 hover:to-teal-800/80 text-left transition flex items-center justify-between group">
+          <div>
+            <div class="font-bold text-emerald-400 text-base group-hover:text-emerald-300 flex items-center gap-1.5">
+              <span>🟢 練習模式</span>
+              <span class="text-[10px] bg-emerald-900 text-emerald-200 px-1.5 py-0.5 rounded border border-emerald-700">無限加購</span>
+            </div>
+            <p class="text-xs text-gray-300 mt-1">初始 $1,000 (250枚)。可自由切換設定 1~6，代幣用完可無限次加購，適合目押練習與測試設定。</p>
+          </div>
+          <span class="text-emerald-400 font-black text-xl ml-2">➔</span>
+        </button>
+
+        <!-- 生存模式 -->
+        <button onclick="selectGameMode('SURVIVAL')" class="btn-push p-4 rounded-xl border-2 border-rose-500/80 bg-gradient-to-r from-rose-950/60 to-red-900/60 hover:from-rose-900/80 hover:to-red-800/80 text-left transition flex items-center justify-between group">
+          <div>
+            <div class="font-bold text-rose-400 text-base group-hover:text-rose-300 flex items-center gap-1.5">
+              <span>🔴 生存模式</span>
+              <span class="text-[10px] bg-rose-900 text-rose-200 px-1.5 py-0.5 rounded border border-rose-700">固定設定 1 & 階級挑戰</span>
+            </div>
+            <p class="text-xs text-gray-300 mt-1">初始 $1,000 (250枚，階級 C)，<b>設定固定為設定 1 且無法加購</b>！可隨時離台結算鎖定戰績或挑戰最高階級。</p>
+          </div>
+          <span class="text-rose-400 font-black text-xl ml-2">➔</span>
+        </button>
+      </div>
+
+      <p class="text-[11px] text-gray-500">切換模式將會重置當前的數據與轉數紀錄</p>
+    </div>
+  </div>
+
+  <!-- 生存模式 Game Over 彈窗 -->
+  <div id="gameOverModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex justify-center items-center p-3">
+    <div class="bg-gray-900 border-2 border-rose-600 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl text-center">
+      <div class="space-y-1">
+        <span class="text-3xl">💀</span>
+        <h3 class="text-xl font-black text-rose-500 tracking-wider">GAME OVER</h3>
+        <p class="text-xs text-gray-400">生存模式挑戰結束！代幣已全部耗盡。</p>
+      </div>
+
+      <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 space-y-2 text-xs">
+        <div class="text-amber-400 font-bold border-b border-gray-800 pb-1">📊 本次生存數據統計</div>
+        <div id="goRankBadge" class="text-sm font-bold text-red-500 py-1">最終階級：F 級 (破產)</div>
+        <div class="grid grid-cols-2 gap-2 text-gray-300 pt-1 text-left">
+          <div>總轉數：<strong id="goTotalGames" class="text-amber-400 font-digital">0 G</strong></div>
+          <div>出玉率：<strong id="goPayoutRate" class="text-emerald-400 font-digital">0%</strong></div>
+          <div>BB 次數：<strong id="goBB" class="text-rose-400 font-digital">0</strong></div>
+          <div>RB 次數：<strong id="goRB" class="text-emerald-400 font-digital">0</strong></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <button onclick="selectGameMode('SURVIVAL')" class="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold text-xs transition border border-rose-400 shadow btn-push">
+          🔄 重新挑戰生存
+        </button>
+        <button onclick="toggleModal('modeModal', true); toggleModal('gameOverModal', false);" class="w-full py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg font-bold text-xs transition border border-gray-600">
+          🎮 切換模式
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="dataModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-center items-center p-3">
     <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg p-4 sm:p-5 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
       <div class="flex justify-between items-center border-b border-gray-800 pb-2">
@@ -288,11 +441,17 @@
     </div>
   </div>
 
+  <!-- 機台設定彈窗 SETTING MODAL -->
   <div id="settingModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-center items-center p-3">
     <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-sm p-4 space-y-4 shadow-2xl">
       <div class="flex justify-between items-center border-b border-gray-800 pb-2">
         <h3 class="text-base font-bold text-amber-400">機台設定變更 (設定 1 ~ 6)</h3>
         <button onclick="toggleModal('settingModal')" class="text-gray-400 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <!-- 生存模式下呈現的警告警示條 -->
+      <div id="settingSurvivalNotice" class="hidden text-xs bg-rose-950/80 border border-rose-700/60 text-rose-300 p-2 rounded text-center font-bold">
+        🔒 生存模式下機台固定為「設定 1」，無法變更設定。
       </div>
 
       <div class="grid grid-cols-2 gap-2 text-xs">
@@ -372,6 +531,11 @@
                 • <strong>降低失誤成本</strong>：即使目押し失敗沒對齊，也只消耗 1 枚代幣！
             </p>
         </div>
+
+        <div>
+          <p class="font-bold text-amber-300 text-sm">🎰 生存模式階級與離台機制</p>
+          <p class="mt-1 text-gray-400">生存模式以 $1,000 為開局本金（階級 C），設定固定為「設定 1」。您可以隨時點擊標題列的 <span class="text-amber-400 font-bold">💰 離台結算</span> 按鈕離開機台，鎖定戰績並領取階級評價！</p>
+        </div>
       </div>
 
       <button onclick="toggleModal('guideModal')" class="w-full py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold transition">開始實戰</button>
@@ -381,11 +545,12 @@
   <!-- JAVASCRIPT ENGINE -->
   <script>
     const state = {
-      credits: 0,
-      totalCashSpent: 0,
+      gameMode: 'PRACTICE', // 'PRACTICE' | 'SURVIVAL'
+      credits: 250,
+      totalCashSpent: 1000,
       bet: 0,
-      selectedBet: 3, // 預設 3 BET
-      setting: 1,     // 預設設定 1
+      selectedBet: 3,
+      setting: 1,
       autoSim: false,
       soundMuted: false,
       mode: 'NORMAL',
@@ -400,10 +565,9 @@
       history: [],
       slumpHistory: [0],
 
-      // 重構：大獎滯留與小獎獨立抽選
-      bonusFlag: null,    // 滯留大獎旗標 ('BB' | 'RB' | null)
-      smallWinFlag: null, // 當局小獎旗標 ('GRAPE' | 'REPLAY' | 'CHERRY' | null)
-      flag: null,         // 當局生效的總旗標 (小獎優先於大獎)
+      bonusFlag: null,    
+      smallWinFlag: null, 
+      flag: null,         
       noticeTiming: null,
       feverLit: false,
 
@@ -415,6 +579,76 @@
     };
 
     let autoTimer = null;
+
+    // 所有階級門檻配置與說明資料
+    const RANK_CONFIG = [
+      { rank: 'SS', minAssets: 20000, label: 'SS 級 (傳奇賭王)', comment: '超越極限的神話！完美的操盤技術與天幸加持！', style: 'bg-gradient-to-r from-yellow-400 to-amber-500 text-black border-yellow-200 shadow-yellow-500/50' },
+      { rank: 'S+', minAssets: 12000, label: 'S+ 級 (豪賭大亨)', comment: '手氣大爆發！果斷的離場時機展現頂級賭客風範！', style: 'bg-gradient-to-r from-amber-400 to-yellow-500 text-black border-amber-200 shadow-amber-500/50' },
+      { rank: 'S',  minAssets: 8000,  label: 'S 級 (大獲全勝)',  comment: '大獲全勝！精準掌握機台週期，滾出驚人利潤！', style: 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white border-purple-300 shadow-purple-500/50' },
+      { rank: 'A+', minAssets: 5000,  label: 'A+ 級 (高階獲利)', comment: '極為亮眼的戰績，資產翻了數倍有餘！', style: 'bg-gradient-to-r from-rose-500 to-pink-600 text-white border-rose-300 shadow-rose-500/50' },
+      { rank: 'A',  minAssets: 3000,  label: 'A 級 (獲利專家)',  comment: '資產成功翻倍，極具策略眼光的亮眼離場！', style: 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-emerald-300 shadow-emerald-500/50' },
+      { rank: 'B+', minAssets: 2000,  label: 'B+ 級 (穩健小贏)', comment: '穩紮穩打，獲利達到開局資產的雙倍！', style: 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white border-teal-300 shadow-teal-500/50' },
+      { rank: 'B',  minAssets: 1400,  label: 'B 級 (保本小盈)',  comment: '成功小賺離場，體現了優秀的風險控管！', style: 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white border-cyan-300 shadow-cyan-500/50' },
+      { rank: 'C+', minAssets: 1100,  label: 'C+ 級 (平穩小增)', comment: '穩定獲利，成功保住戰果並帶走小幅進帳！', style: 'bg-gradient-to-r from-sky-600 to-indigo-600 text-white border-sky-300 shadow-sky-500/50' },
+      { rank: 'C',  minAssets: 900,   label: 'C 級 (開局持平)',  comment: '平穩結算！成功保留原始本金離開機台。', style: 'bg-gradient-to-r from-amber-600 to-yellow-600 text-white border-amber-300 shadow-amber-500/50' },
+      { rank: 'C-', minAssets: 700,   label: 'C- 級 (小幅虧損)', comment: '小傷離場，時機抓得及時，避免了嚴重失血。', style: 'bg-gradient-to-r from-orange-600 to-amber-700 text-white border-orange-300 shadow-orange-500/50' },
+      { rank: 'D',  minAssets: 300,   label: 'D 級 (告急危險)',  comment: '本金大幅失血，在全盤覆沒前及時止損！', style: 'bg-gradient-to-r from-rose-700 to-red-800 text-white border-rose-400 shadow-rose-600/50' },
+      { rank: 'E',  minAssets: 1,     label: 'E 級 (瀕臨破產)',  comment: '資產幾近枯竭，險些破產！', style: 'bg-gradient-to-r from-red-800 to-red-950 text-rose-200 border-red-500 shadow-red-900/50' },
+      { rank: 'F',  minAssets: 0,     label: 'F 級 (徹底破產)',  comment: '代幣扣光，遺憾破產離場！', style: 'bg-gray-800 text-red-500 border-red-800 shadow-gray-900/50' }
+    ];
+
+    // 階級計算邏輯 (資產 = 代幣 * 4)
+    function getRankInfo(credits) {
+      const assets = credits * 4;
+      for (const item of RANK_CONFIG) {
+        if (assets >= item.minAssets) {
+          return item;
+        }
+      }
+      return RANK_CONFIG[RANK_CONFIG.length - 1];
+    }
+
+    // 開啟「階級門檻對照彈窗」
+    function openRankModal() {
+      const currentAssets = state.credits * 4;
+      const currentRankInfo = getRankInfo(state.credits);
+
+      document.getElementById('rankModalCurrentCoins').innerText = `${state.credits} 枚`;
+      document.getElementById('rankModalCurrentAsset').innerText = `($${currentAssets.toLocaleString()})`;
+
+      const badgeEl = document.getElementById('rankModalCurrentBadge');
+      badgeEl.innerText = currentRankInfo.label;
+      badgeEl.className = `mt-1 inline-block text-xs font-black px-3 py-1 rounded-lg shadow ${currentRankInfo.style}`;
+
+      const container = document.getElementById('rankListContainer');
+      container.innerHTML = RANK_CONFIG.map(item => {
+        const isCurrent = currentRankInfo.rank === item.rank;
+        const minCoins = item.minAssets === 1 ? '1~74' : (item.minAssets / 4).toLocaleString();
+        const reqText = item.minAssets === 0 ? '0 枚 ($0)' : `${minCoins} 枚 ($${item.minAssets.toLocaleString()})`;
+
+        return `
+          <div class="p-2 sm:p-2.5 rounded-xl border transition flex items-center justify-between gap-2 ${
+            isCurrent 
+              ? 'bg-purple-950/80 border-purple-400 shadow-lg ring-1 ring-purple-400/50' 
+              : 'bg-gray-950/60 border-gray-800 hover:border-gray-700 opacity-80 hover:opacity-100'
+          }">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="font-black text-[10px] sm:text-xs px-2 py-0.5 rounded border flex-shrink-0 ${item.style}">${item.rank} 級</span>
+              <div class="flex flex-col min-w-0">
+                <span class="font-bold text-gray-200 text-xs truncate">${item.label}</span>
+                <span class="text-[10px] text-gray-400 leading-tight line-clamp-1">${item.comment}</span>
+              </div>
+            </div>
+            <div class="text-right pl-2 flex-shrink-0">
+              <div class="font-digital text-amber-400 text-xs">${reqText}</div>
+              ${isCurrent ? '<span class="text-[9px] font-bold text-emerald-400">👈 當前階級</span>' : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      toggleModal('rankModal', true);
+    }
 
     const SETTING_PROBS = {
       1: { bb: 273.1, rb: 439.8, grape: 6.35 },
@@ -446,13 +680,79 @@
       }
     }
 
+    function selectGameMode(mode) {
+      state.gameMode = mode;
+      state.credits = 250;
+      state.totalCashSpent = 1000;
+      state.totalGames = 0;
+      state.currentGames = 0;
+      state.bbCount = 0;
+      state.rbCount = 0;
+      state.totalPayout = 0;
+      state.totalBetCoins = 0;
+      state.bonusFlag = null;
+      state.smallWinFlag = null;
+      state.flag = null;
+      state.feverLit = false;
+      state.history = [];
+      state.slumpHistory = [0];
+      state.winLines = [];
+
+      // 若為生存模式，強制將設定固定為設定 1
+      if (mode === 'SURVIVAL') {
+        state.setting = 1;
+      }
+
+      if (state.autoSim) toggleAutoSim();
+
+      toggleModal('modeModal', false);
+      toggleModal('gameOverModal', false);
+      toggleModal('settlementModal', false);
+
+      updateUI();
+    }
+
+    function openSettlementModal() {
+      if (state.spinning.some(s => s) || !state.stopped.every(s => s)) {
+        alert('請先等待滾輪停止後再進行離台結算！');
+        return;
+      }
+      if (state.autoSim) toggleAutoSim();
+
+      const rankInfo = getRankInfo(state.credits);
+      const currentAssets = state.credits * 4;
+      const netProfit = currentAssets - 1000;
+
+      const badgeEl = document.getElementById('settleRankBadge');
+      badgeEl.innerText = rankInfo.label;
+      badgeEl.className = `text-xl font-black px-4 py-1.5 rounded-xl border shadow-lg ${rankInfo.style}`;
+
+      document.getElementById('settleRankComment').innerText = rankInfo.comment;
+      document.getElementById('settleCoins').innerText = `${state.credits} 枚`;
+      document.getElementById('settleAssets').innerText = `$${currentAssets.toLocaleString()}`;
+      
+      const profitText = `${netProfit >= 0 ? '+' : ''}$${netProfit.toLocaleString()}`;
+      const profitEl = document.getElementById('settleNetProfit');
+      profitEl.innerText = profitText;
+      profitEl.className = netProfit >= 0 ? 'text-emerald-400 font-digital' : 'text-rose-400 font-digital';
+
+      document.getElementById('settleTotalGames').innerText = `${state.totalGames} G`;
+
+      const payoutRate = state.totalBetCoins > 0 ? ((state.totalPayout / state.totalBetCoins) * 100).toFixed(1) : '100.0';
+      document.getElementById('settlePayoutRate').innerText = `${payoutRate}%`;
+      document.getElementById('settleBB').innerText = state.bbCount;
+      document.getElementById('settleRB').innerText = state.rbCount;
+
+      toggleModal('settlementModal', true);
+    }
+
     function toggleSound() {
       state.soundMuted = !state.soundMuted;
       const btn = document.getElementById('soundToggleBtn');
       if (state.soundMuted) {
-        btn.querySelector('span').innerHTML = '🔇 音效: <strong id="soundStatusText" class="text-rose-400">OFF</strong>';
+        btn.querySelector('span').innerHTML = '🔇 <strong id="soundStatusText" class="text-rose-400">OFF</strong>';
       } else {
-        btn.querySelector('span').innerHTML = '🔊 音效: <strong id="soundStatusText" class="text-emerald-400">ON</strong>';
+        btn.querySelector('span').innerHTML = '🔊 <strong id="soundStatusText" class="text-emerald-400">ON</strong>';
       }
     }
 
@@ -498,6 +798,10 @@
     }
 
     function buyCoins() {
+      if (state.gameMode === 'SURVIVAL') {
+        alert('生存模式下無法加購代幣！');
+        return;
+      }
       initAudio();
       state.totalCashSpent += 1000;
       state.credits += 250;
@@ -744,11 +1048,9 @@
       });
     }
 
-    // 🔧 修正 1 & 2：獨立大獎滯留與每局小獎獨立抽選
     function drawLottery() {
       const prob = SETTING_PROBS[state.setting];
 
-      // 1. 大獎滯留機制：未命中大獎時才進行大獎抽選，抽中則保留至對齊為止
       if (!state.bonusFlag) {
         const randBonus = Math.random() * 1000;
         const bbThresh = 1000 / prob.bb;
@@ -763,7 +1065,6 @@
         }
       }
 
-      // 2. 當局小獎獨立抽選：每局正常抽選小獎，不受大獎滯留影響
       const randSmall = Math.random() * 1000;
       const grapeThresh = 1000 / prob.grape;
       const replayThresh = grapeThresh + 130;
@@ -774,7 +1075,6 @@
       else if (randSmall < cherryThresh) state.smallWinFlag = 'CHERRY';
       else state.smallWinFlag = null;
 
-      // 3. 優先級判斷：小獎優先成立，當局若無小獎則嘗試釋放大獎
       state.flag = state.smallWinFlag || state.bonusFlag;
     }
 
@@ -790,12 +1090,10 @@
       const strip = REEL_STRIPS[reelIdx];
       const activePaylines = (state.bet === 1) ? [PAYLINES[1]] : PAYLINES;
 
-      // 1. 內部已抽中旗標 (BB, RB, GRAPE, REPLAY, CHERRY)
       if (state.flag) {
         for (let slip = 0; slip <= 4; slip++) {
           const candidateStop = (targetIndex + slip) % 21;
 
-          // 🔧 修正 3：櫻桃 (CHERRY) 上/中/下格皆可吸附成立
           if (state.flag === 'CHERRY' && reelIdx === 0) {
             const symTop = strip[candidateStop % 21];
             const symMid = strip[(candidateStop + 1) % 21];
@@ -804,7 +1102,6 @@
             continue;
           }
 
-          // 模擬當前格數下的畫面盤面
           const tempStops = [...state.stopIndex];
           tempStops[reelIdx] = candidateStop;
 
@@ -814,7 +1111,6 @@
             return [s[st % 21], s[(st + 1) % 21], s[(st + 2) % 21]];
           });
 
-          // 🛑 核心檢查：如果這一格會「意外湊出非本局旗標的小獎或大獎」，直接跳過迴避！
           if (reelIdx === 2) {
             let accidentalUnwantedWin = false;
 
@@ -833,7 +1129,6 @@
             if (accidentalUnwantedWin) continue;
           }
 
-          // 檢查是否成功湊出「本局抽中的目標旗標」
           let canConnect = false;
           for (const line of activePaylines) {
             const s0 = grid[0][line.pos[0]];
@@ -865,7 +1160,6 @@
         return targetIndex;
       }
 
-      // 2. 內部未中獎 (!state.flag) -> 4 格內自動避開所有大獎與小獎
       for (let slip = 0; slip <= 4; slip++) {
         const candidateStop = (targetIndex + slip) % 21;
         const tempStops = [...state.stopIndex];
@@ -905,6 +1199,23 @@
       return (targetIndex + 1) % 21;
     }
 
+    function triggerGameOver() {
+      if (audioCtx && !state.soundMuted) {
+        playBeep(200, 0.4, 'sawtooth');
+      }
+      document.getElementById('goTotalGames').innerText = `${state.totalGames} G`;
+      document.getElementById('goBB').innerText = state.bbCount;
+      document.getElementById('goRB').innerText = state.rbCount;
+      
+      const payoutRate = state.totalBetCoins > 0 ? ((state.totalPayout / state.totalBetCoins) * 100).toFixed(1) : '0.0';
+      document.getElementById('goPayoutRate').innerText = `${payoutRate}%`;
+      
+      const rankInfo = getRankInfo(0);
+      document.getElementById('goRankBadge').innerText = `最終階級：${rankInfo.label}`;
+
+      toggleModal('gameOverModal', true);
+    }
+
     function handleStartLever() {
       if (state.spinning.some(s => s) || !state.stopped.every(s => s)) return;
 
@@ -913,10 +1224,16 @@
       const requiredCost = state.isFreeSpin ? 0 : state.selectedBet;
 
       if (state.credits < requiredCost) {
-        if (state.autoSim) {
-          buyCoins();
-        } else {
-          alert('代幣不足！請先點擊【💵 投入 $1,000】購買代幣。');
+        if (state.gameMode === 'PRACTICE') {
+          if (state.autoSim) {
+            buyCoins();
+          } else {
+            alert('代幣不足！請先點擊【💵 投入 $1,000】加購代幣。');
+            return;
+          }
+        } else if (state.gameMode === 'SURVIVAL') {
+          if (state.autoSim) toggleAutoSim();
+          triggerGameOver();
           return;
         }
       }
@@ -937,7 +1254,6 @@
 
       drawLottery();
 
-      // 先告知判定 (PRE)
       if ((state.bonusFlag === 'BB' || state.bonusFlag === 'RB') && state.noticeTiming === 'PRE') {
         triggerFeverNotice();
       }
@@ -1033,19 +1349,16 @@
         const s1 = visibleGrid[1][line.pos[1]];
         const s2 = visibleGrid[2][line.pos[2]];
 
-        // 🔴 判定 7 7 7 (BIG BONUS)
         if (s0 === 0 && s1 === 0 && s2 === 0) {
           state.winLines.push(line);
           hitBB = true;
           payout += 300;
         } 
-        // 🟢 判定 7 7 BAR (REG BONUS)
         else if (s0 === 0 && s1 === 0 && s2 === 1) {
           state.winLines.push(line);
           hitRB = true;
           payout += 100;
         }
-        // 小獎與 Replay 判定
         else if (s0 === s1 && s1 === s2) {
           state.winLines.push(line);
           if (s0 === 4) payout += 8;
@@ -1061,18 +1374,16 @@
       if (leftMid === 2) payout += 4;
       else if (leftTop === 2 || leftBot === 2) payout += 2;
 
-      // 後告知判定 (POST)
       if ((state.bonusFlag === 'BB' || state.bonusFlag === 'RB') && state.noticeTiming === 'POST') {
         triggerFeverNotice();
       }
 
-      // 成功對齊並結算大獎時，才清除滯留大獎
       if (hitBB) {
         state.bbCount++;
         addHistory('BIG BONUS');
         state.currentGames = 0;
         state.feverLit = false;
-        state.bonusFlag = null; // ✅ 清除大獎滯留
+        state.bonusFlag = null;
         state.smallWinFlag = null;
         state.flag = null;
         playBbFanfare();
@@ -1081,7 +1392,7 @@
         addHistory('REG BONUS');
         state.currentGames = 0;
         state.feverLit = false;
-        state.bonusFlag = null; // ✅ 清除大獎滯留
+        state.bonusFlag = null;
         state.smallWinFlag = null;
         state.flag = null;
         playBbFanfare();
@@ -1102,6 +1413,12 @@
 
       renderPaylineOverlay();
       updateUI();
+
+      if (state.credits < state.selectedBet && state.gameMode === 'SURVIVAL' && !state.isFreeSpin) {
+        if (state.autoSim) toggleAutoSim();
+        setTimeout(triggerGameOver, 500);
+        return;
+      }
 
       if (state.autoSim) {
         autoTimer = setTimeout(runAutoLoop, 400);
@@ -1153,11 +1470,81 @@
 
     function updateUI() {
       document.getElementById('creditDisplay').innerText = state.credits;
-      document.getElementById('cashSpentDisplay').innerText = `$${state.totalCashSpent.toLocaleString()}`;
+      
+      const currentAssetVal = state.credits * 4;
+      document.getElementById('assetDisplay').innerText = `$${currentAssetVal.toLocaleString()}`;
+
+      document.getElementById('cashSpentDisplay') && (document.getElementById('cashSpentDisplay').innerText = `$${state.totalCashSpent.toLocaleString()}`);
       document.getElementById('statTotalGames').innerText = state.totalGames;
       document.getElementById('statCurrentGames').innerText = state.currentGames;
       document.getElementById('statBB').innerText = state.bbCount;
       document.getElementById('statRB').innerText = state.rbCount;
+
+      const modeHeader = document.getElementById('currentModeHeader');
+      const rankHeader = document.getElementById('rankBadgeHeader');
+      const rankBtnHeader = document.getElementById('rankBtnHeader');
+      const cashOutBtn = document.getElementById('cashOutBtn');
+      const buyBtn = document.getElementById('buyCoinsBtn');
+      const buySubtext = document.getElementById('buyCoinsSubtext');
+      const settingHeader = document.getElementById('currentSettingHeader');
+      const survivalNotice = document.getElementById('settingSurvivalNotice');
+
+      // 動態更新頂部獨立階級按鈕內容
+      const currentRankInfo = getRankInfo(state.credits);
+      if (rankHeader) {
+        rankHeader.innerText = `階級 ${currentRankInfo.rank}`;
+      }
+
+      if (state.gameMode === 'SURVIVAL') {
+        if (modeHeader) {
+          modeHeader.innerText = '生存模式';
+          modeHeader.className = 'text-rose-400 font-bold';
+        }
+        if (rankBtnHeader) rankBtnHeader.classList.remove('hidden');
+        if (cashOutBtn) cashOutBtn.classList.remove('hidden');
+
+        if (buyBtn) {
+          buyBtn.disabled = true;
+          buySubtext.innerText = '(無法加購)';
+        }
+
+        // 生存模式下鎖定設定按鈕文字與提示條
+        if (settingHeader) settingHeader.innerText = '🔒 設定 1 (固定)';
+        if (survivalNotice) survivalNotice.classList.remove('hidden');
+      } else {
+        if (modeHeader) {
+          modeHeader.innerText = '練習模式';
+          modeHeader.className = 'text-emerald-300 font-bold';
+        }
+        if (rankBtnHeader) rankBtnHeader.classList.add('hidden');
+        if (cashOutBtn) cashOutBtn.classList.add('hidden');
+
+        if (buyBtn) {
+          buyBtn.disabled = false;
+          buySubtext.innerText = '(換250枚)';
+        }
+
+        if (settingHeader) settingHeader.innerText = `設定 ${state.setting}`;
+        if (survivalNotice) survivalNotice.classList.add('hidden');
+      }
+
+      // 更新設定彈窗內的按鈕狀態
+      document.querySelectorAll('.setting-btn').forEach(btn => {
+        const setVal = parseInt(btn.getAttribute('data-s'));
+        if (state.gameMode === 'SURVIVAL') {
+          if (setVal === 1) {
+            btn.className = 'setting-btn border p-2 rounded text-left transition bg-amber-900/40 border-amber-500/50 opacity-60 cursor-not-allowed';
+          } else {
+            btn.className = 'setting-btn border p-2 rounded text-left transition bg-gray-800/50 border-gray-800 opacity-40 cursor-not-allowed';
+          }
+        } else {
+          if (setVal === state.setting) {
+            btn.className = 'setting-btn border p-2 rounded text-left transition bg-amber-900/40 border-amber-500 hover:bg-amber-900/80 cursor-pointer';
+          } else {
+            btn.className = 'setting-btn border p-2 rounded text-left transition bg-gray-800 border-gray-700 hover:bg-amber-900/50 cursor-pointer';
+          }
+        }
+      });
 
       const lamp = document.getElementById('feverLamp');
       const feverText = document.getElementById('feverText');
@@ -1197,6 +1584,8 @@
             <span class="font-digital text-amber-400">${item.games} G</span>
           </div>
         `).join('');
+      } else {
+        historyEl.innerHTML = '<div class="text-gray-600 text-center py-2">尚無大獎紀錄</div>';
       }
 
       updateBetUI();
@@ -1204,25 +1593,34 @@
     }
 
     function changeSetting(s) {
+      if (state.gameMode === 'SURVIVAL') {
+        alert('生存模式下設定固定為「設定 1」，無法變更設定！');
+        return;
+      }
       state.setting = s;
-      document.getElementById('currentSettingHeader').innerText = `設定 ${s}`;
-      document.querySelectorAll('.setting-btn').forEach(btn => {
-        const setVal = parseInt(btn.getAttribute('data-s'));
-        if (setVal === s) {
-          btn.className = 'setting-btn border p-2 rounded text-left transition bg-amber-900/40 border-amber-500';
-        } else {
-          btn.className = 'setting-btn border p-2 rounded text-left transition bg-gray-800 border-gray-700 hover:bg-amber-900/50';
-        }
-      });
+      updateUI();
       toggleModal('settingModal');
     }
 
-    function toggleModal(id) {
+    function toggleModal(id, forceShow) {
       const el = document.getElementById(id);
-      if (el) el.classList.toggle('hidden');
+      if (el) {
+        if (typeof forceShow === 'boolean') {
+          if (forceShow) el.classList.remove('hidden');
+          else el.classList.add('hidden');
+        } else {
+          el.classList.toggle('hidden');
+        }
+      }
     }
 
     window.addEventListener('keydown', (e) => {
+      const openModal = document.querySelector('.fixed:not(.hidden)');
+      if (openModal) {
+        if (e.code === 'Escape') openModal.classList.add('hidden');
+        return;
+      }
+
       if (e.code === 'Space') {
         e.preventDefault();
         handleStartLever();
@@ -1233,6 +1631,10 @@
       } else if (e.code === 'KeyC') {
         stopReel(2);
       }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      toggleModal('modeModal', true);
     });
 
     requestAnimationFrame(renderReels);
