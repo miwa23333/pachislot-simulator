@@ -1058,10 +1058,10 @@
 
         if (randBonus < bbThresh) {
           state.bonusFlag = 'BB';
-          state.noticeTiming = Math.random() < 0.25 ? 'PRE' : 'POST';
+          state.noticeTiming = Math.random() < 0.9 ? 'PRE' : 'POST';
         } else if (randBonus < rbThresh) {
           state.bonusFlag = 'RB';
-          state.noticeTiming = Math.random() < 0.25 ? 'PRE' : 'POST';
+          state.noticeTiming = Math.random() < 0.9 ? 'PRE' : 'POST';
         }
       }
 
