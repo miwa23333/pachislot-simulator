@@ -325,8 +325,6 @@
       </div>
 
       <div class="space-y-3 text-gray-300 leading-relaxed">
-
-        <!-- 目押し技巧指南 -->
         <div>
           <p class="font-bold text-amber-300 text-sm">👁️ 精準「目押し」實戰技巧指南</p>
           <ul class="list-disc list-inside space-y-1 mt-1 text-gray-400">
@@ -357,7 +355,6 @@
           <p>點擊標題列的 <span class="text-emerald-400 font-bold">AUTO</span> 按鈕可啟動自動旋轉，代幣用完時會自動加購 $1,000。</p>
         </div>
 
-        <!-- 💡 新增：亮燈時切換 1 BET 密技 -->
         <div class="bg-amber-950/40 border border-amber-600/50 p-2.5 rounded-xl">
             <p class="font-bold text-amber-300 text-sm">💡 進階省幣密技：FEVER 燈亮時切換 1 BET！</p>
             <p class="mt-1 text-gray-300 leading-relaxed">
@@ -394,7 +391,10 @@
       history: [],
       slumpHistory: [0],
 
-      flag: null,
+      // 重構：大獎滯留與小獎獨立抽選
+      bonusFlag: null,    // 滯留大獎旗標 ('BB' | 'RB' | null)
+      smallWinFlag: null, // 當局小獎旗標 ('GRAPE' | 'REPLAY' | 'CHERRY' | null)
+      flag: null,         // 當局生效的總旗標 (小獎優先於大獎)
       noticeTiming: null,
       feverLit: false,
 
@@ -735,28 +735,38 @@
       });
     }
 
+    // 🔧 修正 1 & 2：獨立大獎滯留與每局小獎獨立抽選
     function drawLottery() {
       const prob = SETTING_PROBS[state.setting];
 
-      if (state.feverLit) return;
+      // 1. 大獎滯留機制：未命中大獎時才進行大獎抽選，抽中則保留至對齊為止
+      if (!state.bonusFlag) {
+        const randBonus = Math.random() * 1000;
+        const bbThresh = 1000 / prob.bb;
+        const rbThresh = bbThresh + (1000 / prob.rb);
 
-      const rand = Math.random() * 1000;
-      const bbThresh = 1000 / prob.bb;
-      const rbThresh = bbThresh + (1000 / prob.rb);
-      const grapeThresh = rbThresh + (1000 / prob.grape);
+        if (randBonus < bbThresh) {
+          state.bonusFlag = 'BB';
+          state.noticeTiming = Math.random() < 0.25 ? 'PRE' : 'POST';
+        } else if (randBonus < rbThresh) {
+          state.bonusFlag = 'RB';
+          state.noticeTiming = Math.random() < 0.25 ? 'PRE' : 'POST';
+        }
+      }
+
+      // 2. 當局小獎獨立抽選：每局正常抽選小獎，不受大獎滯留影響
+      const randSmall = Math.random() * 1000;
+      const grapeThresh = 1000 / prob.grape;
       const replayThresh = grapeThresh + 130;
       const cherryThresh = replayThresh + 30;
 
-      if (rand < bbThresh) {
-        state.flag = 'BB';
-        state.noticeTiming = Math.random() < 0.25 ? 'PRE' : 'POST';
-      } else if (rand < rbThresh) {
-        state.flag = 'RB';
-        state.noticeTiming = Math.random() < 0.25 ? 'PRE' : 'POST';
-      } else if (rand < grapeThresh) state.flag = 'GRAPE';
-      else if (rand < replayThresh) state.flag = 'REPLAY';
-      else if (rand < cherryThresh) state.flag = 'CHERRY';
-      else state.flag = null;
+      if (randSmall < grapeThresh) state.smallWinFlag = 'GRAPE';
+      else if (randSmall < replayThresh) state.smallWinFlag = 'REPLAY';
+      else if (randSmall < cherryThresh) state.smallWinFlag = 'CHERRY';
+      else state.smallWinFlag = null;
+
+      // 3. 優先級判斷：小獎優先成立，當局若無小獎則嘗試釋放大獎
+      state.flag = state.smallWinFlag || state.bonusFlag;
     }
 
     function triggerFeverNotice() {
@@ -769,49 +779,115 @@
 
     function calculateSlipStop(reelIdx, targetIndex) {
       const strip = REEL_STRIPS[reelIdx];
+      const activePaylines = (state.bet === 1) ? [PAYLINES[1]] : PAYLINES;
 
+      // 1. 內部已抽中旗標 (BB, RB, GRAPE, REPLAY, CHERRY)
+      if (state.flag) {
+        for (let slip = 0; slip <= 4; slip++) {
+          const candidateStop = (targetIndex + slip) % 21;
+
+          // 🔧 修正 3：櫻桃 (CHERRY) 上/中/下格皆可吸附成立
+          if (state.flag === 'CHERRY' && reelIdx === 0) {
+            const symTop = strip[candidateStop % 21];
+            const symMid = strip[(candidateStop + 1) % 21];
+            const symBot = strip[(candidateStop + 2) % 21];
+            if (symMid === 2 || symTop === 2 || symBot === 2) return candidateStop;
+            continue;
+          }
+
+          // 模擬當前格數下的畫面盤面
+          const tempStops = [...state.stopIndex];
+          tempStops[reelIdx] = candidateStop;
+
+          const grid = [0, 1, 2].map(r => {
+            const st = (r <= reelIdx) ? tempStops[r] : 0;
+            const s = REEL_STRIPS[r];
+            return [s[st % 21], s[(st + 1) % 21], s[(st + 2) % 21]];
+          });
+
+          // 🛑 核心檢查：如果這一格會「意外湊出非本局旗標的小獎或大獎」，直接跳過迴避！
+          if (reelIdx === 2) {
+            let accidentalUnwantedWin = false;
+
+            for (const line of activePaylines) {
+              const s0 = grid[0][line.pos[0]];
+              const s1 = grid[1][line.pos[1]];
+              const s2 = grid[2][line.pos[2]];
+
+              if (state.flag !== 'BB' && s0 === 0 && s1 === 0 && s2 === 0) accidentalUnwantedWin = true;
+              if (state.flag !== 'RB' && s0 === 0 && s1 === 0 && s2 === 1) accidentalUnwantedWin = true;
+              if (state.flag !== 'GRAPE' && s0 === 4 && s1 === 4 && s2 === 4) accidentalUnwantedWin = true;
+              if (state.flag !== 'REPLAY' && s0 === 5 && s1 === 5 && s2 === 5) accidentalUnwantedWin = true;
+              if (state.flag !== 'BELL' && s0 === 3 && s1 === 3 && s2 === 3) accidentalUnwantedWin = true;
+            }
+
+            if (accidentalUnwantedWin) continue;
+          }
+
+          // 檢查是否成功湊出「本局抽中的目標旗標」
+          let canConnect = false;
+          for (const line of activePaylines) {
+            const s0 = grid[0][line.pos[0]];
+            const s1 = grid[1][line.pos[1]];
+            const s2 = grid[2][line.pos[2]];
+
+            if (state.flag === 'BB') {
+              if (reelIdx === 0 && s0 === 0) canConnect = true;
+              else if (reelIdx === 1 && s0 === 0 && s1 === 0) canConnect = true;
+              else if (reelIdx === 2 && s0 === 0 && s1 === 0 && s2 === 0) canConnect = true;
+            } else if (state.flag === 'RB') {
+              if (reelIdx === 0 && s0 === 0) canConnect = true;
+              else if (reelIdx === 1 && s0 === 0 && s1 === 0) canConnect = true;
+              else if (reelIdx === 2 && s0 === 0 && s1 === 0 && s2 === 1) canConnect = true;
+            } else if (state.flag === 'GRAPE') {
+              if (reelIdx === 0 && s0 === 4) canConnect = true;
+              else if (reelIdx === 1 && s0 === 4 && s1 === 4) canConnect = true;
+              else if (reelIdx === 2 && s0 === 4 && s1 === 4 && s2 === 4) canConnect = true;
+            } else if (state.flag === 'REPLAY') {
+              if (reelIdx === 0 && s0 === 5) canConnect = true;
+              else if (reelIdx === 1 && s0 === 5 && s1 === 5) canConnect = true;
+              else if (reelIdx === 2 && s0 === 5 && s1 === 5 && s2 === 5) canConnect = true;
+            }
+          }
+
+          if (canConnect) return candidateStop;
+        }
+
+        return targetIndex;
+      }
+
+      // 2. 內部未中獎 (!state.flag) -> 4 格內自動避開所有大獎與小獎
       for (let slip = 0; slip <= 4; slip++) {
         const candidateStop = (targetIndex + slip) % 21;
         const tempStops = [...state.stopIndex];
         tempStops[reelIdx] = candidateStop;
 
-        if (!state.flag) {
-          const candidateSym = strip[(candidateStop + 1) % 21];
-          if (candidateSym === 0 || candidateSym === 1) continue;
+        const candidateSym = strip[(candidateStop + 1) % 21];
+        if (candidateSym === 0 || candidateSym === 1) continue;
 
-          if (reelIdx === 0) {
-            const symTop = strip[candidateStop % 21];
-            const symMid = strip[(candidateStop + 1) % 21];
-            const symBot = strip[(candidateStop + 2) % 21];
-            if (symTop === 2 || symMid === 2 || symBot === 2) continue;
-          }
-
-          if (reelIdx === 2) {
-            let accidentalWin = false;
-            const grid = [0, 1, 2].map(r => {
-              const st = (r === 2) ? candidateStop : tempStops[r];
-              const s = REEL_STRIPS[r];
-              return [s[st % 21], s[(st + 1) % 21], s[(st + 2) % 21]];
-            });
-
-            const activeLines = (state.bet === 1) ? [PAYLINES[1]] : PAYLINES;
-
-            for (const line of activeLines) {
-              const s0 = grid[0][line.pos[0]];
-              const s1 = grid[1][line.pos[1]];
-              const s2 = grid[2][line.pos[2]];
-              if (s0 === s1 && s1 === s2) {
-                accidentalWin = true;
-                break;
-              }
-            }
-            if (accidentalWin) continue;
-          }
+        if (reelIdx === 0) {
+          const symTop = strip[candidateStop % 21];
+          const symMid = strip[(candidateStop + 1) % 21];
+          const symBot = strip[(candidateStop + 2) % 21];
+          if (symTop === 2 || symMid === 2 || symBot === 2) continue;
         }
 
-        if (state.flag === 'CHERRY' && reelIdx === 0) {
-          const candidateSym = strip[(candidateStop + 1) % 21];
-          if (candidateSym === 2) return candidateStop;
+        if (reelIdx === 2) {
+          let accidentalWin = false;
+          const grid = [0, 1, 2].map(r => {
+            const st = (r === 2) ? candidateStop : tempStops[r];
+            const s = REEL_STRIPS[r];
+            return [s[st % 21], s[(st + 1) % 21], s[(st + 2) % 21]];
+          });
+
+          for (const line of activePaylines) {
+            const s0 = grid[0][line.pos[0]];
+            const s1 = grid[1][line.pos[1]];
+            const s2 = grid[2][line.pos[2]];
+            if (s0 === s1 && s1 === s2) { accidentalWin = true; break; }
+            if (s0 === 0 && s1 === 0 && s2 === 1) { accidentalWin = true; break; }
+          }
+          if (accidentalWin) continue;
         }
 
         return candidateStop;
@@ -852,7 +928,8 @@
 
       drawLottery();
 
-      if ((state.flag === 'BB' || state.flag === 'RB') && state.noticeTiming === 'PRE') {
+      // 先告知判定 (PRE)
+      if ((state.bonusFlag === 'BB' || state.bonusFlag === 'RB') && state.noticeTiming === 'PRE') {
         triggerFeverNotice();
       }
 
@@ -947,16 +1024,24 @@
         const s1 = visibleGrid[1][line.pos[1]];
         const s2 = visibleGrid[2][line.pos[2]];
 
-        if (s0 === s1 && s1 === s2) {
+        // 🔴 判定 7 7 7 (BIG BONUS)
+        if (s0 === 0 && s1 === 0 && s2 === 0) {
           state.winLines.push(line);
-
-          if (s0 === 0) { hitBB = true; payout += 300; }
-          else if (s0 === 1) { hitRB = true; payout += 100; }
-          else if (s0 === 4) payout += 8;
+          hitBB = true;
+          payout += 300;
+        } 
+        // 🟢 判定 7 7 BAR (REG BONUS)
+        else if (s0 === 0 && s1 === 0 && s2 === 1) {
+          state.winLines.push(line);
+          hitRB = true;
+          payout += 100;
+        }
+        // 小獎與 Replay 判定
+        else if (s0 === s1 && s1 === s2) {
+          state.winLines.push(line);
+          if (s0 === 4) payout += 8;
           else if (s0 === 3) payout += 10;
-          else if (s0 === 5) {
-            state.isFreeSpin = true;
-          }
+          else if (s0 === 5) state.isFreeSpin = true;
         }
       });
 
@@ -967,24 +1052,30 @@
       if (leftMid === 2) payout += 4;
       else if (leftTop === 2 || leftBot === 2) payout += 2;
 
-      if ((state.flag === 'BB' || state.flag === 'RB') && state.noticeTiming === 'POST') {
+      // 後告知判定 (POST)
+      if ((state.bonusFlag === 'BB' || state.bonusFlag === 'RB') && state.noticeTiming === 'POST') {
         triggerFeverNotice();
       }
 
+      // 成功對齊並結算大獎時，才清除滯留大獎
       if (hitBB) {
         state.bbCount++;
+        addHistory('BIG BONUS');
         state.currentGames = 0;
         state.feverLit = false;
+        state.bonusFlag = null; // ✅ 清除大獎滯留
+        state.smallWinFlag = null;
         state.flag = null;
         playBbFanfare();
-        addHistory('BIG BONUS');
       } else if (hitRB) {
         state.rbCount++;
+        addHistory('REG BONUS');
         state.currentGames = 0;
         state.feverLit = false;
+        state.bonusFlag = null; // ✅ 清除大獎滯留
+        state.smallWinFlag = null;
         state.flag = null;
         playBbFanfare();
-        addHistory('REG BONUS');
       }
 
       if (payout > 0) {
